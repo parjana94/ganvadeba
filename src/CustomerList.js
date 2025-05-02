@@ -9,13 +9,15 @@ import {
   query,
   orderBy
 } from "firebase/firestore";
-import EditCustomer from "./EditCustomer";  // ახალ კომპონენტზე გადამისამართება
+import EditCustomer from "./EditCustomer";
 
 export default function CustomerList() {
   const [customers, setCustomers] = useState([]);
   const [filter, setFilter] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
-  const [editCustomerId, setEditCustomerId] = useState(null); // მონიშნული მომხმარებელი რედაქტირებისათვის
+  const [editCustomerId, setEditCustomerId] = useState(null);
+  const [deleteCustomerId, setDeleteCustomerId] = useState(null); // წაშლის მომხმარებლის ID
+  const [confirmDelete, setConfirmDelete] = useState(false); // წაშლის დადასტურების მოდალი
 
   const fetchCustomers = async () => {
     const q = query(collection(db, "customers"), orderBy("endDate"));
@@ -35,15 +37,31 @@ export default function CustomerList() {
     fetchCustomers();
   };
 
-  const deleteCustomer = async (customerId) => {
-    try {
-      const docRef = doc(db, "customers", customerId);
-      await deleteDoc(docRef);
-      alert("მომხმარებელი წაიშალა");
-      fetchCustomers(); // ახალი მონაცემების აღდგენა
-    } catch (err) {
-      alert("დაფიქსირდა შეცდომა მომხმარებლის წაშლაში");
+  const deleteCustomer = async () => {
+    if (deleteCustomerId) {
+      try {
+        const docRef = doc(db, "customers", deleteCustomerId);
+        await deleteDoc(docRef);
+        alert("მომხმარებელი წაიშალა");
+        fetchCustomers(); // მონაცემების განახლება
+      } catch (err) {
+        alert("დაფიქსირდა შეცდომა მომხმარებლის წაშლაში");
+      }
     }
+    setConfirmDelete(false); // მოდალის დახურვა
+  };
+
+  const handleDeleteClick = (customerId) => {
+    setDeleteCustomerId(customerId); // მომხმარებლის ID-ს შენახვა
+    setConfirmDelete(true); // მოდალის ჩვენება
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmDelete(false); // მოდალის დახურვა
+  };
+
+  const handleEditClick = (customerId) => {
+    setEditCustomerId(customerId);
   };
 
   const filtered = customers.filter(c =>
@@ -90,7 +108,8 @@ export default function CustomerList() {
           )}
 
           <button onClick={() => toggleStatus(c)}>სტატუსის შეცვლა</button>
-          <button onClick={() => deleteCustomer(c.id)} style={{ color: "red" }}>წაშლა</button> {/* წაშლის ღილაკი */}
+          <button onClick={() => handleDeleteClick(c.id)} style={{ color: "red" }}>წაშლა</button> {/* წაშლის ღილაკი */}
+          <button onClick={() => handleEditClick(c.id)}>რედაქტირება</button> {/* რედაქტირების ღილაკი */}
         </div>
       ))}
 
@@ -108,6 +127,41 @@ export default function CustomerList() {
           }}
         >
           <img src={selectedImage} alt="გადიდებული სურათი" style={{ maxWidth: "90%", maxHeight: "90%" }} />
+        </div>
+      )}
+
+      {/* რედაქტირების ფორმა */}
+      {editCustomerId && (
+        <EditCustomer customerId={editCustomerId} close={() => setEditCustomerId(null)} />
+      )}
+
+      {/* წაშლის დადასტურების მოდალი */}
+      {confirmDelete && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              padding: "20px",
+              borderRadius: "10px",
+              textAlign: "center",
+            }}
+          >
+            <p>დარწმუნებული ხართ რომ გსურთ მომხმარებლის წაშლა?</p>
+            <button onClick={deleteCustomer} style={{ color: "red", marginRight: "10px" }}>
+              დიახ
+            </button>
+            <button onClick={handleCancelDelete}>არა</button>
+          </div>
         </div>
       )}
     </div>
