@@ -5,6 +5,7 @@ import {
   getDocs,
   updateDoc,
   doc,
+  deleteDoc,
   query,
   orderBy
 } from "firebase/firestore";
@@ -32,6 +33,17 @@ export default function CustomerList() {
     const docRef = doc(db, "customers", customer.id);
     await updateDoc(docRef, { status: newStatus });
     fetchCustomers();
+  };
+
+  const deleteCustomer = async (customerId) => {
+    try {
+      const docRef = doc(db, "customers", customerId);
+      await deleteDoc(docRef);
+      alert("მომხმარებელი წაიშალა");
+      fetchCustomers(); // ახალი მონაცემების აღდგენა
+    } catch (err) {
+      alert("დაფიქსირდა შეცდომა მომხმარებლის წაშლაში");
+    }
   };
 
   const filtered = customers.filter(c =>
@@ -78,7 +90,7 @@ export default function CustomerList() {
           )}
 
           <button onClick={() => toggleStatus(c)}>სტატუსის შეცვლა</button>
-          <button onClick={() => setEditCustomerId(c.id)}>რედაქტირება</button> {/* რედაქტირების ღილაკი */}
+          <button onClick={() => deleteCustomer(c.id)} style={{ color: "red" }}>წაშლა</button> {/* წაშლის ღილაკი */}
         </div>
       ))}
 
@@ -97,10 +109,6 @@ export default function CustomerList() {
         >
           <img src={selectedImage} alt="გადიდებული სურათი" style={{ maxWidth: "90%", maxHeight: "90%" }} />
         </div>
-      )}
-
-      {editCustomerId && (
-        <EditCustomer customerId={editCustomerId} onClose={() => setEditCustomerId(null)} /> /* რედაქტირების ფორმის ჩართვა */
       )}
     </div>
   );
